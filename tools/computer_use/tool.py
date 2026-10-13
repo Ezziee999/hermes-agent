@@ -601,11 +601,13 @@ def _element_to_dict(e: UIElement) -> dict[str, Any]:
     # A zero rect is "geometry unknown", not a position — null it so no coordinate= is ever derived from it (the index still works).
     return {"index": e.index, "role": e.role, "label": e.label[:_MAX_ELEMENT_LABEL_CHARS],
             "bounds": None if _bounds_unknown(e.bounds) else list(e.bounds), "app": e.app,
+            **({"screenshot_bounds": e.attributes["screenshot_bounds"]} if e.attributes.get("screenshot_bounds") else {}),
             **({"label_truncated": True} if len(e.label) > _MAX_ELEMENT_LABEL_CHARS else {})}
 
 def _format_elements(elements: list[UIElement], max_lines: int = 40) -> list[str]:
     out = [f"  #{e.index} {e.role} {e.label.replace(chr(10), ' ')[:60]!r} "
            + ("@ bounds-unknown (click by element index)" if _bounds_unknown(e.bounds) else f"@ {e.bounds}")
+           + (f"; screenshot pixels @ {e.attributes['screenshot_bounds']}" if e.attributes.get("screenshot_bounds") else "")
            + (f" [{e.app}]" if e.app else "") for e in elements[:max_lines]]
     return out + ([f"  ... +{len(elements) - max_lines} more (call capture with app= to narrow)"] if len(elements) > max_lines else [])
 
@@ -618,7 +620,7 @@ def _screenshot_coordinate_note(image_width: int, image_height: int) -> Optional
     if image_width <= 0 or image_height <= 0:
         return None
     return ("For window-targeted actions, coordinate=, from_coordinate= and to_coordinate= use pixels in the captured window screenshot "
-            "(top-left origin); pass screenshot positions unchanged. Element bounds may use a different "
+            "(top-left origin); pass screenshot positions unchanged. screenshot_bounds, when present, use these same pixels. Element bounds may use a different "
             "origin or scale; prefer element indices and do not infer a screenshot scale from element extents.")
 
 def _capture_view(cap: CaptureResult, max_elements: int) -> SimpleNamespace:

@@ -422,6 +422,13 @@ resizing. Prefer fresh element indices when available. Raw accessibility
 bounds can use a different origin or scale; their extents do not establish a
 valid conversion to screenshot coordinates.
 
+When the driver supplies `screenshot_bounds=[x, y, width, height]`, Hermes
+preserves that rectangle in capture-image pixels separately from the raw
+accessibility `bounds`. Its center can ground a pixel click without inferring
+a scale from accessibility geometry. Hermes keeps element indices stable at
+its public tool boundary and uses fresh snapshot tokens for drivers that
+require them.
+
 If auxiliary vision receives a further resized copy, its scale note maps
 reported points back to the **original capture image**, which remains the
 coordinate frame accepted by the action. Full-screen captures require a fresh

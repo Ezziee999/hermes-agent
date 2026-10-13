@@ -107,6 +107,30 @@ def test_screenshot_coordinates_reach_same_captured_target_unchanged(backend, ac
     assert backend.calls[-1] == ("capture", target)
 
 
+def test_driver_screenshot_bounds_survive_capture_and_ground_pixel_input(backend):
+    from tools.computer_use.cua_backend_parse import _parse_elements_from_structured
+
+    backend.elements = _parse_elements_from_structured([{
+        "element_index": 2, "role": "AXButton", "label": "Confirm",
+        "frame": {"x": 3440, "y": 1900, "w": 160, "h": 60},
+        "screenshot_frame": {"x": 511, "y": 287, "w": 80, "h": 30},
+        "element_token": "snapshot:2",
+    }])
+    payload = json.loads(registry.dispatch("computer_use", {
+        "action": "capture", "mode": "ax", "pid": 42, "window_id": 87,
+    }))
+    element = payload["elements"][0]
+    assert element["bounds"] == [3440, 1900, 160, 60]
+    assert element["screenshot_bounds"] == [511, 287, 80, 30]
+    assert "screenshot pixels" in payload["summary"]
+    x, y, width, height = element["screenshot_bounds"]
+    registry.dispatch("computer_use", {
+        "action": "click", "coordinate": [x + width // 2, y + height // 2],
+    })
+    assert backend.inputs[-1][1] == {"pid": 42, "window_id": 87}
+    assert (backend.inputs[-1][2]["x"], backend.inputs[-1][2]["y"]) == (551, 302)
+
+
 def test_aux_vision_coordinates_map_back_to_capture_pixels(backend, monkeypatch):
     from tools import vision_tools
 
